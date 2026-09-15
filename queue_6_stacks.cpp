@@ -4,7 +4,6 @@
 using namespace std;
 
 struct Stack {
-	vector<int> st;
 
 	void push(int x) {
 		st.push_back(x);
@@ -28,6 +27,9 @@ struct Stack {
 	size_t size() {
 		return st.size();
 	}
+
+	vector<int> st;
+
 };
 
 enum Mode {NORMAL, BERSERK};
@@ -142,6 +144,10 @@ struct Queue {
 			default:
 				TurnOff();
 		}
+
+		#ifdef DEBUG
+		PrintInfo();
+		#endif
 	}
 
 	void TurnOff() {
@@ -155,7 +161,7 @@ struct Queue {
 										printf("%d ", x); 			\
 									printf("\n");
 
-	void print_info() {
+	void PrintInfo() {
 		printf("\\--------------------------------\n");
 		printf("mode: %d, phase: %d\n", mode, phase);
 		printf("deleted: %d\n", deleted);
@@ -186,7 +192,7 @@ struct Queue {
 
 #undef MOVE_ELEM
 
-int main() {
+void TestQueue(int n = 1e5) {
 	srand(time(NULL));
 
 	Queue q;
@@ -196,14 +202,14 @@ int main() {
 
 	for (int i = 0; i < n; ++i) {
         int x = rand() % 1000 + 2;
-		// string s;
-		// cin >> s;
-        
+
 		if (r.empty() || rand() % 2) {
-			//cin >> x;
 			q.push(x);
 			r.push(x);
-			//q.print_info();
+
+			#ifdef DEBUG
+			q.PrintInfo();
+			#endif
 		}
 		else {
 			int res1 = r.front();
@@ -215,9 +221,14 @@ int main() {
 			}
 
 			r.pop();
-			//q.print_info();
+
+			#ifdef DEBUG
+			q.PrintInfo();
+			#endif
 		}
     }
+}
 
-
+int main() {
+	TestQueue();
 }
