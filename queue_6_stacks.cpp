@@ -38,17 +38,56 @@ const int STEP_COUNT = 4;
 #define MOVE_ELEM(st1, st2)		st2.push(st1.pop())
 
 struct Queue {
-	Stack in, out, inCopy, outCopy, tmp, outCopy2;
 
-	Mode mode = NORMAL;
-	Phase phase = NORM;
-	int kol = 0;
-	int deleted = 0;
+	void push(int x) {
+		if (mode == NORMAL) {
+			in.push(x);
 
-	void TurnOff() {
-		mode = NORMAL;
-		swap(outCopy, outCopy2);
-		swap(in, inCopy);
+			CleanCopy();
+
+			TurnOnIfNeed();
+		}
+		else {
+			inCopy.push(x);
+			MakeSteps(STEP_COUNT);
+		}
+	}
+
+	int pop() {
+		int res = 0;
+
+		if (mode == NORMAL) {
+			res = out.pop();
+			outCopy.pop();
+
+			CleanCopy();
+
+			TurnOnIfNeed();
+		}
+		else {
+			++deleted;
+			res = outCopy.pop();
+			MakeSteps(STEP_COUNT);
+		}
+
+		return res;
+	}
+
+	void TurnOnIfNeed() {
+		if (in.size() > out.size()) {
+			mode = BERSERK;
+			phase = OUT;
+
+			MakeSteps(STEP_COUNT);
+			
+			kol = (int)out.size();
+			deleted = 0;
+		}
+	}
+
+	void CleanCopy() {
+		if (!outCopy2.empty())
+			outCopy2.pop();
 	}
 
 	void MakeSteps(int cnt) {
@@ -105,53 +144,10 @@ struct Queue {
 		}
 	}
 
-	void TurnOnIfNeed() {
-		if (in.size() > out.size()) {
-			mode = BERSERK;
-			phase = OUT;
-			MakeSteps(STEP_COUNT);
-			kol = (int)out.size();
-			deleted = 0;
-		}
-	}
-
-	void CleanCopy() {
-		if (!outCopy2.empty())
-			outCopy2.pop();
-	}
-
-	void push(int x) {
-		if (mode == NORMAL) {
-			in.push(x);
-
-			CleanCopy();
-
-			TurnOnIfNeed();
-		}
-		else {
-			inCopy.push(x);
-			MakeSteps(STEP_COUNT);
-		}
-	}
-
-	int pop() {
-		int res = 0;
-
-		if (mode == NORMAL) {
-			res = out.pop();
-			outCopy.pop();
-
-			CleanCopy();
-
-			TurnOnIfNeed();
-		}
-		else {
-			++deleted;
-			res = outCopy.pop();
-			MakeSteps(STEP_COUNT);
-		}
-
-		return res;
+	void TurnOff() {
+		mode = NORMAL;
+		swap(outCopy, outCopy2);
+		swap(in, inCopy);
 	}
 
 	#define PRINT_STACK(stack_name)	printf(#stack_name ": ");		\
@@ -176,6 +172,15 @@ struct Queue {
 	}
 
 	#undef PRINT_STACK
+
+	Stack	in,		out, 		\
+			inCopy, outCopy, 	\
+			tmp,	outCopy2;
+
+	Mode	mode	= NORMAL;
+	Phase	phase	= NORM;
+	int		kol		= 0;
+	int		deleted	= 0;
 
 };
 
