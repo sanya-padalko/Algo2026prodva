@@ -36,6 +36,7 @@ enum Phase {OUT, IN, TMP, CLEAN, NORM};
 const int STEP_COUNT = 4;
 
 #define MOVE_ELEM(st1, st2)		st2.push(st1.pop())
+
 struct Queue {
 	Stack in, out, inCopy, outCopy, tmp, outCopy2;
 
@@ -102,8 +103,6 @@ struct Queue {
 			default:
 				TurnOff();
 		}
-
-		//print_info();
 	}
 
 	void TurnOnIfNeed() {
@@ -163,17 +162,24 @@ struct Queue {
 	void print_info() {
 		printf("\\--------------------------------\n");
 		printf("mode: %d, phase: %d\n", mode, phase);
+		printf("deleted: %d\n", deleted);
+
 		PRINT_STACK(in);
 		PRINT_STACK(out);
 		PRINT_STACK(inCopy);
 		PRINT_STACK(outCopy);
 		PRINT_STACK(tmp);
 		PRINT_STACK(outCopy2);
+
 		printf("\\--------------------------------");
 		cout << endl;
 	}
 
+	#undef PRINT_STACK
+
 };
+
+#undef MOVE_ELEM
 
 int main() {
 	srand(time(NULL));
