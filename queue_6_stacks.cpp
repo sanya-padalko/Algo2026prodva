@@ -3,11 +3,6 @@
 
 using namespace std;
 
-const int STEP_COUNT = 4;
-
-enum Mode {NORMAL, BERSERK};
-enum Phase {OUT, IN, TMP, CLEAN, NORM};
-
 struct Queue;
 struct Stack;
 
@@ -52,7 +47,11 @@ void TestQueue(int n = 1e5) {
     }
 }
 
-#define MOVE_ELEM(st1, st2)		st2.push(st1.pop())
+#define MOVE_ELEM(st1, st2)	st2.push(st1.pop())
+
+const int STEP_COUNT = 4;
+enum Mode {NORMAL, BERSERK};
+enum Phase {OUT, IN, TMP, CLEAN, NORM};
 
 struct Queue {
 
