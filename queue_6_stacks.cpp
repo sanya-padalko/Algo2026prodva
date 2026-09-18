@@ -3,49 +3,43 @@
 
 using namespace std;
 
-struct Queue;
 struct Stack;
+struct Queue;
+
+void TestQueue(int = 1e5);
 
 int main() {
 	TestQueue();
 }
 
-void TestQueue(int n = 1e5) {
-	srand(time(NULL));
+struct Stack {
 
-	Queue q;
-	queue<int> r;
-	int n;
-	cin >> n;
+	void push(int x) {
+		st.push_back(x);
+	}
 
-	for (int i = 0; i < n; ++i) {
-        int x = rand() % 1000 + 2;
+	int top() {
+		return st.back();
+	}
 
-		if (r.empty() || rand() % 2) {
-			q.push(x);
-			r.push(x);
+	int pop() {
+		int x = st.back();
+		st.pop_back();
 
-			#ifdef DEBUG
-			q.PrintInfo();
-			#endif
-		}
-		else {
-			int res1 = r.front();
-			int res2 = q.pop();
+		return x;
+	}
 
-			if (res1 != res2) {
-				cout << "ERROR";
-				return 0;
-			}
+	int empty() {
+		return st.empty();
+	}
 
-			r.pop();
+	size_t size() {
+		return st.size();
+	}
 
-			#ifdef DEBUG
-			q.PrintInfo();
-			#endif
-		}
-    }
-}
+	vector<int> st;
+
+};
 
 #define MOVE_ELEM(st1, st2)	st2.push(st1.pop())
 
@@ -206,31 +200,39 @@ struct Queue {
 
 #undef MOVE_ELEM
 
-struct Stack {
+void TestQueue(int n) {
+	srand(time(NULL));
 
-	void push(int x) {
-		st.push_back(x);
-	}
+	Queue q;
+	queue<int> r;
 
-	int top() {
-		return st.back();
-	}
+	for (int i = 0; i < n; ++i) {
+        int x = rand() % 1000 + 2;
 
-	int pop() {
-		int x = st.back();
-		st.pop_back();
+		if (r.empty() || rand() % 2) {
+			q.push(x);
+			r.push(x);
 
-		return x;
-	}
+			#ifdef DEBUG
+			q.PrintInfo();
+			#endif
+		}
+		else {
+			int res1 = r.front();
+			int res2 = q.pop();
 
-	int empty() {
-		return st.empty();
-	}
+			if (res1 != res2) {
+				cout << "ERROR";
+				return;
+			}
 
-	size_t size() {
-		return st.size();
-	}
+			r.pop();
 
-	vector<int> st;
+			#ifdef DEBUG
+			q.PrintInfo();
+			#endif
+		}
+    }
 
-};
+	printf("Everything is OK\n");
+}
