@@ -1,5 +1,5 @@
 \documentclass[12pt]{article}
-\usepackage{graphicx} % Required for inserting images
+\usepackage{graphicx}
 
 \usepackage[T2A]{fontenc}
 \usepackage[utf8]{inputenc}
@@ -7,8 +7,16 @@
 
 \usepackage{amsmath, amsfonts, amssymb}
 \usepackage{amsthm}
+% \usepackage{mathpazo}
+% \usepackage{fourier}
+% \usepackage{newtxmath}
+% \usepackage{kpfonts} 
+
 \usepackage[left=2cm, right=2cm, top=2cm, bottom=2cm]{geometry}
+\newenvironment{solution}{\begin{proof}[Решение]}{\end{proof}}
 \newtheorem*{custom}{}
+\newtheorem*{task_1}{Задача 1}
+\newtheorem*{task_2}{Задача 2}
 
 \title{Домашнее задание - 1}
 \author{Падалко Александр, Б05-615}
@@ -16,5 +24,54 @@
 \begin{document}
 
 \maketitle
+
+
+
+
+
+\begin{task_1}
+		
+	$T(n) = 3T(\lfloor\sqrt{n}\rfloor) + \log_2{n}$
+
+\end{task_1}
+
+\begin{solution}
+		
+	Пусть $n = 2^m$, $m = \log_2{n}$, 
+	$\sqrt{n} = \frac{m}{2}$
+
+	$T(n) = S(m) = 3S(\frac{m}{2}) + m$
+
+	$S(m)$ можем найти с помощью мастер-теоремы о рекурсии,
+	в частности $S(m) = a \cdot S(\frac{m}{b}) + {m^c}$, где $a = 3, b = 2, c = 1$.
+
+	Отсюда следует, что поскольку $\log_{a}{b} = \log_2{3} > 1 = c$, то
+	$S(m) = \Theta({m^{\log_2{3}}})$
+
+	Значит $T(n) = S(m) = \Theta(m^{\log_2{3}}) 
+	= \Theta(({\log_2{n}}) ^ {\log_2{3}})$
+
+\end{solution}
+
+
+
+
+
+\begin{task_2}
+
+	$T(n) = 2T(\lceil\frac{n}{2}\rceil) + n\log_2{n}$
+
+\end{task_2}
+
+\begin{solution}
+	Рассмотрим, как выглядит $T(n)$ при разделении на уровни.
+
+	В частности, на первом (самом высоком) уровне имеет просто 
+	$n \log_2{n}$. Затем $2\cdot\frac{n}{2}(\log_2{\frac{n}{2}}) = 
+	n (\log_2{n} - 1)$. На уровне $k$ имеем: $n (\log_2{n} - k)$. Значит,
+	по сути, хотим найти $\sum_{0}^{\log_2{n}} n (\log_2{n} - k) = 
+	n \cdot \sum_{0}^{\log_2{n}} (\log_2{n} - k) = n \cdot \log_2{n} 
+	(\log_2{n} + 1) = \Theta(n \log^2_2{n})$
+\end{solution}
 
 \end{document}
