@@ -17,6 +17,7 @@
 \newtheorem*{custom}{}
 \newtheorem*{task_1}{Задача 1}
 \newtheorem*{task_2}{Задача 2}
+\newtheorem*{task_3}{Задача 3}
 
 \title{Домашнее задание - 1}
 \author{Падалко Александр, Б05-615}
@@ -64,6 +65,7 @@
 \end{task_2}
 
 \begin{solution}
+
 	Рассмотрим, как выглядит $T(n)$ при разделении на уровни.
 
 	В частности, на первом (самом высоком) уровне имеет просто 
@@ -72,6 +74,41 @@
 	по сути, хотим найти $\sum_{0}^{\log_2{n}} n (\log_2{n} - k) = 
 	n \cdot \sum_{0}^{\log_2{n}} (\log_2{n} - k) = n \cdot \log_2{n} 
 	(\log_2{n} + 1) = \Theta(n \log^2_2{n})$
+
 \end{solution}
+
+
+
+
+
+
+\begin{task_3}
+	
+	$T(n) = \sqrt{n} \cdot T(\lfloor \sqrt{n} \rfloor) + n$
+
+\end{task_3}
+
+\begin{solution}
+
+	Пусть $S(n) = \frac{T(n)}{n}$
+
+	$S(n) = \frac{T(n)}{n} = 
+	\frac{T(\lfloor \sqrt{n} \rfloor)}{\sqrt{n}} + 1 = 
+	S(\sqrt{n}) + 1$
+
+	Пусть $n = 2^m, m = \log_2{n}, \sqrt{n} = \frac{m}{2}$
+
+	$S(n) = P(m) = P(\frac{m}{2}) + 1 = \Theta({\log_2{m}}) = 
+	\Theta({\log_2{\log_2{n}}})$
+
+	$T(n) = S(n) \cdot n = \Theta(n\cdot\log_2{\log_2{n}})$
+
+\end{solution}
+
+
+
+
+
+
 
 \end{document}
