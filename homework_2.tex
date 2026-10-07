@@ -1,0 +1,91 @@
+\documentclass[12pt]{article}
+\usepackage{graphicx}
+\usepackage{float}
+
+\usepackage[T2A]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[russian]{babel}
+
+\usepackage{amsmath, amsfonts, amssymb}
+\usepackage{amsthm}
+% \usepackage{mathpazo}
+% \usepackage{fourier}
+% \usepackage{newtxmath}
+% \usepackage{kpfonts} 
+
+\usepackage[left=2cm, right=2cm, top=2cm, bottom=2cm]{geometry}
+\newenvironment{solution}{\begin{proof}[Решение]}{\end{proof}}
+\newtheorem*{custom}{}
+\newtheorem*{task_1}{Задача 1}
+\newtheorem*{1.a}{a}
+
+\title{Домашнее задание - 2}
+\author{Падалко Александр, Б05-615}
+
+\begin{document}
+
+\maketitle
+
+\begin{task_1}
+
+	Доказать эффективность TimSort.
+
+\end{task_1}
+
+\begin{solution}
+	
+	Итак, поддерживаем убывающий стек run-ов.
+
+	Инвариант стека: 
+
+	Для любых трех подряд идущих элементов $Z > Y > X$, $Z > Y + X$.
+
+	Когда инвариант нарушается при добавлении в конец стека очередного
+	run-а, мы объединяем с конца $Y$ с минимумом из $X$ и $Z$, пока
+	инвариант снова не восстановится.
+
+	\paragraph{a)} Докажем, что это объединение работает за $
+	\mathcal{O}(n)$.
+
+	Пока инвариант выполняется у нас поддерживается инвариант, который 
+	заставляет расти размеры от верха стека ко дну как минимум как
+	числа Фиббоначи.
+
+	Пусть объединяются run-ы с размерами $a_1, a_2, ..., a_i$.
+	Тогда, поскольку слияние двух отсортированных run-ов выполняются
+	за $\mathcal{O}(len)$ - где, $len$ - суммарная длина объединяемых 
+	run-ов. Представим это как то, что $j$-й run объединится 
+	$(i - j + 1)$ раз, следовательно от него придет $(i - j + 1) \cdot
+	\mathcal{O}(a_j)$.
+	Тогда общую асимптотику можем оценить как:
+
+	$\sum_{j = 1}^{i} (i - j + 1)\cdot \mathcal{O}(a_j)$
+
+	Оценим $a_j$. После него, в частности, длины run-ов растут не менее 
+	чем как числа Фиббоначи, значит, так как сумма длин всех run-ов 
+	не превосходит $n$ и после $a_j$ идет $(i - j + 1)$, то $a_j \cdot 
+	F_{i - j + 1} \leq n \implies a_j \leq \frac{n}{F_{i - j + 1}}$.
+
+	Значит $\sum_{j = 1}^{i} (i - j + 1)\cdot \mathcal{O}(a_j) \leq
+	\sum_{j = 1}^{i} (i - j + 1) \cdot  \frac{n}{F_{i - j + 1}} = 
+	n \cdot \sum_{j = 1}^{i}\frac{i - j + 1}{F_{i - j + 1}} = n\cdot  
+	\sum_{j = 1}^{i} \frac{i}{F_i} \leq n\cdot 
+	\sum_{j = 1}^{i} \frac{i}{2^i} = n\cdot \mathcal{O}(1) = \mathcal{O}
+	(n)$
+
+	\paragraph{b)}
+
+	По сути, в силу того, что при объединении мы объединяем блок
+	с большим, то размер объединяемого блока увеличивается хотя бы
+	в $2$ раза,
+	что говорит о том, что для каждый элемент может участвовать 
+	не более чем в $\log_n (n)$ объединениях, а так как для каждого
+	конкретного элемента можем считать, что он участвовал только после
+	того каждое из этих участий для него закончилось, то суммарно для 
+	всех элементов это будет равно $\mathcal{O}(n)$.
+	
+	
+
+\end{solution}
+
+\end{document}
