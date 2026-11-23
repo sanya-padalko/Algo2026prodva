@@ -94,7 +94,8 @@ int main() {
 	}
 
 	size_t componentsCount = vertexCount;
-	while (componentsCount != 1) {
+	weight_t minOstovWeight = 0;
+	while (true) {
 		for (size_t currentVertex = 0; currentVertex < vertexCount; ++currentVertex) {
 			minEnterEdge[vertexComponent[currentVertex]].to_ = MAX_VERTEX_COUNT;
 			minEnterEdge[vertexComponent[currentVertex]].weight_ = WRONG_VALUE;
@@ -114,13 +115,52 @@ int main() {
 			}
 		}
 
+		size_t compressedComponentsCount = 0;
 		for (size_t currentComponent = 0; currentComponent < componentsCount; ++currentComponent) {
 			if (componentType[currentComponent] == ENDED)
 				continue;
 			
 			size_t cycleVertex = FindCycleVertex(currentComponent);
+			if (cycleVertex == MAX_VERTEX_COUNT)
+				continue;
+			
+			std::vector<char> inCycle(componentsCount);
+			compressedComponentsCount = 0;
+			size_t firstCycleVertex = cycleVertex;
+			weight_t sumCycleWeight = 0;
+			size_t newComponentIndex = vertexComponent[cycleVertex];
+			do {
+				sumCycleWeight += minEnterEdge[cycleVertex].weight_;
+				newComponentIndex = std::min(newComponentIndex, vertexComponent[cycleVertex]);
+				inCycle[vertexComponent[cycleVertex]] = 1;
+
+				cycleVertex = minEnterEdge[cycleVertex].to_;
+			} while (cycleVertex != firstCycleVertex);
+
+			for (size_t currentVertex = 0; currentVertex < vertexCount; ++currentVertex) {
+				for (Edge& edge : graph[currentVertex]) {
+					if (inCycle[vertexComponent[edge.to_]] && !inCycle[vertexComponent[currentVertex]]) {
+						edge.weight_ -= minEnterEdge[vertexComponent[edge.to_]].weight_;
+					}
+				}
+			}
+
+			minOstovWeight += sumCycleWeight;
+
+			do {
+				vertexComponent[cycleVertex] = newComponentIndex;
+				cycleVertex = minEnterEdge[cycleVertex].to_;
+			} while (cycleVertex != firstCycleVertex);
+		}
+
+		if (compressedComponentsCount == 0) {
+			for (size_t currentComponent = 0; currentComponent < componentsCount; ++currentComponent) {
+				minOstovWeight += minEnterEdge[currentComponent].weight_;
+			}
+
+			break;
 		}
 	}
 
-
+	std::cout << minOstovWeight;
 }
