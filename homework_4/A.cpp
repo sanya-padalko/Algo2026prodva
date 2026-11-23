@@ -3,10 +3,11 @@
 
 using weight_t = int;
 const int MAX_VERTEX_COUNT = 1000;
+const weight_t WRONG_VALUE = 2e9;
 
 struct Edge {
-	size_t to_;
-	weight_t weight_;
+	size_t to_ = MAX_VERTEX_COUNT;
+	weight_t weight_ = WRONG_VALUE;
 
 	Edge() = delete;
 
@@ -30,7 +31,17 @@ size_t FirstDfs(size_t vertex) {
 	return subtreeSize + 1;
 }
 
-Edge minEdgeNeighbor[MAX_VERTEX_COUNT];
+enum VERTEX_TYPE {
+	EMPTY = 0,
+	ENDED = 2,
+	PROCESS = 1,
+	CYCLED = 3
+};
+
+Edge minEnterEdge[MAX_VERTEX_COUNT];
+VERTEX_TYPE vertexType[MAX_VERTEX_COUNT];
+size_t vertexComponent[MAX_VERTEX_COUNT];
+
 
 int main() {
 	size_t vertexCount, edgeCount;
@@ -55,5 +66,34 @@ int main() {
 	}
 
 	std::cout << "YES\n";
+
+	for (size_t currentVertex = 0; currentVertex < vertexCount; ++currentVertex) {
+		vertexComponent[currentVertex] = currentVertex;
+	}
+
+	size_t componentsCount = vertexCount;
+	while (componentsCount != 1) {
+		for (size_t currentVertex = 0; currentVertex < vertexCount; ++currentVertex) {
+			minEnterEdge[vertexComponent[currentVertex]].to_ = MAX_VERTEX_COUNT;
+			minEnterEdge[vertexComponent[currentVertex]].weight_ = WRONG_VALUE;
+
+			vertexType[vertexComponent[currentVertex]] = EMPTY;
+		}
+
+		for (size_t currentVertex = 0; currentVertex < vertexCount; ++currentVertex) {
+			for (Edge edge : graph[currentVertex]) {
+				if (vertexComponent[edge.to_] == vertexComponent[currentVertex])
+					continue;
+				
+				if (minEnterEdge[vertexComponent[edge.to_]].weight_ > edge.weight_) {
+					minEnterEdge[vertexComponent[edge.to_]].weight_ = edge.weight_;
+					minEnterEdge[vertexComponent[edge.to_]].to_ = vertexComponent[currentVertex];
+				}
+			}
+		}
+
+		
+	}
+
 
 }
