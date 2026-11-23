@@ -33,15 +33,37 @@ size_t FirstDfs(size_t vertex) {
 
 enum VERTEX_TYPE {
 	EMPTY = 0,
-	ENDED = 2,
 	PROCESS = 1,
-	CYCLED = 3
+	ENDED = 2,
 };
 
 Edge minEnterEdge[MAX_VERTEX_COUNT];
-VERTEX_TYPE vertexType[MAX_VERTEX_COUNT];
+VERTEX_TYPE componentType[MAX_VERTEX_COUNT];
 size_t vertexComponent[MAX_VERTEX_COUNT];
 
+size_t FindCycleVertex(size_t currentComponent) { // get First Cycle Vertex
+	componentType[currentComponent] = PROCESS;
+	
+	size_t nextComponent = minEnterEdge[currentComponent].to_;
+	if (nextComponent < MAX_VERTEX_COUNT) {
+		switch (componentType[nextComponent]) {
+			case PROCESS:
+				componentType[currentComponent] = ENDED;
+				return nextComponent;
+
+			case EMPTY:
+				size_t cycleVertex = FindCycleVertex(nextComponent);
+				componentType[currentComponent] = ENDED;
+				return cycleVertex;
+
+			case ENDED:
+				break;
+		}
+	}
+
+	componentType[currentComponent] = ENDED;
+	return MAX_VERTEX_COUNT;
+}
 
 int main() {
 	size_t vertexCount, edgeCount;
@@ -77,7 +99,7 @@ int main() {
 			minEnterEdge[vertexComponent[currentVertex]].to_ = MAX_VERTEX_COUNT;
 			minEnterEdge[vertexComponent[currentVertex]].weight_ = WRONG_VALUE;
 
-			vertexType[vertexComponent[currentVertex]] = EMPTY;
+			componentType[vertexComponent[currentVertex]] = EMPTY;
 		}
 
 		for (size_t currentVertex = 0; currentVertex < vertexCount; ++currentVertex) {
@@ -92,7 +114,12 @@ int main() {
 			}
 		}
 
-		
+		for (size_t currentComponent = 0; currentComponent < componentsCount; ++currentComponent) {
+			if (componentType[currentComponent] == ENDED)
+				continue;
+			
+			size_t cycleVertex = FindCycleVertex(currentComponent);
+		}
 	}
 
 
