@@ -1,9 +1,9 @@
 #include <iostream>
 #include <vector>
 
-using weight_t = int;
+using weight_t = long long;
 const int MAX_VERTEX_COUNT = 1000;
-const weight_t WRONG_VALUE = 2e9;
+const weight_t WRONG_VALUE = 1e18;
 
 struct Edge {
 	size_t to_ = MAX_VERTEX_COUNT;
@@ -67,6 +67,9 @@ size_t FindCycleVertex(size_t currentComponent) { // get First Cycle Vertex
 }
 
 int main() {
+	freopen("chinese.in", "r", stdin);
+	freopen("chinese.out", "w", stdout);
+
 	size_t vertexCount, edgeCount;
 	std::cin >> vertexCount >> edgeCount;
 
@@ -106,7 +109,8 @@ int main() {
 
 		for (size_t currentVertex = 0; currentVertex < vertexCount; ++currentVertex) {
 			for (Edge edge : graph[currentVertex]) {
-				if (vertexComponent[edge.to_] == vertexComponent[currentVertex])
+				if (vertexComponent[edge.to_] == vertexComponent[currentVertex] ||
+					vertexComponent[edge.to_] == vertexComponent[0])
 					continue;
 				
 				if (minEnterEdge[vertexComponent[edge.to_]].weight_ > edge.weight_) {
@@ -117,7 +121,8 @@ int main() {
 		}
 
 		size_t compressedComponentsCount = 0;
-		for (size_t currentComponent = 0; currentComponent < componentsCount; ++currentComponent) {
+		for (size_t currentVertex = 0; currentVertex < vertexCount; ++currentVertex) {
+			size_t currentComponent = vertexComponent[currentVertex];
 			if (componentType[currentComponent] == ENDED)
 				continue;
 			
@@ -125,8 +130,7 @@ int main() {
 			if (cycleVertex == MAX_VERTEX_COUNT)
 				continue;
 			
-			std::vector<char> inCycle(componentsCount);
-			compressedComponentsCount = 0;
+			std::vector<char> inCycle(MAX_VERTEX_COUNT);
 			size_t firstCycleVertex = cycleVertex;
 			weight_t sumCycleWeight = 0;
 			size_t newComponentIndex = vertexComponent[cycleVertex];
@@ -138,9 +142,9 @@ int main() {
 				cycleVertex = minEnterEdge[cycleVertex].to_;
 			} while (cycleVertex != firstCycleVertex);
 
-			for (size_t currentVertex = 0; currentVertex < vertexCount; ++currentVertex) {
-				for (Edge& edge : graph[currentVertex]) {
-					if (inCycle[vertexComponent[edge.to_]] && !inCycle[vertexComponent[currentVertex]]) {
+			for (size_t curVert = 0; curVert < vertexCount; ++curVert) {
+				for (Edge& edge : graph[curVert]) {
+					if (inCycle[vertexComponent[edge.to_]] && !inCycle[vertexComponent[curVert]]) {
 						edge.weight_ -= minEnterEdge[vertexComponent[edge.to_]].weight_;
 					}
 				}
@@ -148,16 +152,20 @@ int main() {
 
 			minOstovWeight += sumCycleWeight;
 
-			do {
-				vertexComponent[cycleVertex] = newComponentIndex;
-				cycleVertex = minEnterEdge[cycleVertex].to_;
-			} while (cycleVertex != firstCycleVertex);
+			for (size_t curVert = 0; curVert < vertexCount; ++curVert) {
+				if (inCycle[vertexComponent[curVert]]) {
+					vertexComponent[curVert] = newComponentIndex;
+				}
+			}
+
+			++compressedComponentsCount;
 		}
 
 		if (compressedComponentsCount == 0) {
-			for (size_t currentComponent = 0; currentComponent < componentsCount; ++currentComponent) {
-				if (minEnterEdge[currentComponent].weight_ != WRONG_VALUE)
-					minOstovWeight += minEnterEdge[currentComponent].weight_;
+			for (size_t currentVertex = 0; currentVertex < vertexCount; ++currentVertex) {
+				if (currentVertex == vertexComponent[currentVertex] &&
+						minEnterEdge[currentVertex].weight_ != WRONG_VALUE)
+					minOstovWeight += minEnterEdge[currentVertex].weight_;
 			}
 
 			break;
