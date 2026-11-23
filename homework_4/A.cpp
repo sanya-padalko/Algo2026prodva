@@ -9,7 +9,7 @@ struct Edge {
 	size_t to_ = MAX_VERTEX_COUNT;
 	weight_t weight_ = WRONG_VALUE;
 
-	Edge() = delete;
+	Edge() = default;
 
 	Edge(size_t to, weight_t weight) 
 		: to_(to), weight_(weight) {}
@@ -46,13 +46,14 @@ size_t FindCycleVertex(size_t currentComponent) { // get First Cycle Vertex
 	
 	size_t nextComponent = minEnterEdge[currentComponent].to_;
 	if (nextComponent < MAX_VERTEX_COUNT) {
+		size_t cycleVertex = MAX_VERTEX_COUNT;
 		switch (componentType[nextComponent]) {
 			case PROCESS:
 				componentType[currentComponent] = ENDED;
 				return nextComponent;
 
 			case EMPTY:
-				size_t cycleVertex = FindCycleVertex(nextComponent);
+				cycleVertex = FindCycleVertex(nextComponent);
 				componentType[currentComponent] = ENDED;
 				return cycleVertex;
 
@@ -155,7 +156,8 @@ int main() {
 
 		if (compressedComponentsCount == 0) {
 			for (size_t currentComponent = 0; currentComponent < componentsCount; ++currentComponent) {
-				minOstovWeight += minEnterEdge[currentComponent].weight_;
+				if (minEnterEdge[currentComponent].weight_ != WRONG_VALUE)
+					minOstovWeight += minEnterEdge[currentComponent].weight_;
 			}
 
 			break;
