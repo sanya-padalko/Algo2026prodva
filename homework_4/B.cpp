@@ -83,6 +83,9 @@ size_t GetParent(size_t currentComponent) {
 	return vertexComponent[currentComponent] = GetParent(vertexComponent[currentComponent]);
 }
 
+
+Edge vertexEdgeWeight[MAX_VERTEX_COUNT];
+
 size_t Dfs(size_t currentVertex) {
 	componentType[currentVertex] = PROCESS;
 
@@ -91,6 +94,7 @@ size_t Dfs(size_t currentVertex) {
 		if (!minNode)
 			break;
 		
+		vertexEdgeWeight[currentVertex] = minNode->value;
 		size_t nextComponent = GetParent(minNode->value.to_);
 		if (nextComponent == currentVertex)
 			continue;
@@ -113,60 +117,87 @@ size_t Dfs(size_t currentVertex) {
 	return MAX_VERTEX_COUNT;
 }
 
+weight_t minOstovWeight = 0;
+
+size_t MakeCompession(size_t currentComponent) {
+	size_t cycleVertex = Dfs(currentComponent);
+	if (cycleVertex == MAX_VERTEX_COUNT)
+		return MAX_VERTEX_COUNT;
+
+	size_t savedCycleVertex = cycleVertex;
+	do {
+		minOstovWeight += vertexEdgeWeight[cycleVertex].weight_;
+		cycleVertex = GetParent(vertexEdgeWeight[cycleVertex].to_);
+	} while (savedCycleVertex != cycleVertex);
+
+	BinomHeap* resultHeap = nullptr;
+	do {
+		resultHeap = Merge(resultHeap, componentHeap[GetParent(cycleVertex)]);
+		vertexComponent[GetParent(cycleVertex)] = GetParent(savedCycleVertex);
+
+		cycleVertex = GetParent(vertexEdgeWeight[cycleVertex].to_);
+	} while (savedCycleVertex != cycleVertex);
+
+	componentHeap[GetParent(cycleVertex)] = resultHeap;
+	componentType[GetParent(cycleVertex)] = EMPTY;
+	return GetParent(cycleVertex);
+}
+
 int main() {
+	std::ios_base::sync_with_stdio(false);
+	std::cin.tie(nullptr);
+
 	srand(time(nullptr));
 
 	size_t vertexCount, edgeCount;
-	std::cin >> vertexCount >> edgeCount;
+	while (std::cin >> vertexCount >> edgeCount) {
 
-	for (size_t i = 0; i < edgeCount; ++i) {
-		size_t firstVertex, secondVertex;
-		std::cin >> firstVertex >> secondVertex;
-		--firstVertex;
-		--secondVertex;
+		for (size_t i = 0; i < edgeCount; ++i) {
+			size_t firstVertex, secondVertex;
+			std::cin >> firstVertex >> secondVertex;
+			--firstVertex;
+			--secondVertex;
 
-		weight_t edgeWeight;
-		std::cin >> edgeWeight;
+			weight_t edgeWeight;
+			std::cin >> edgeWeight;
 
-		graph[firstVertex].emplace_back(Edge(secondVertex, edgeWeight));
-	}
-
-	size_t accessVertex = FirstDfs(0);
-	if (accessVertex != vertexCount) {
-		std::cout << "NO";
-		return 0;
-	}
-
-	vertexComponent[0] = 0;
-	componentType[0] = LINKED;
-	for (size_t currentVertex = 1; currentVertex < vertexCount; ++currentVertex) {
-		vertexComponent[currentVertex] = currentVertex;
-		componentType[currentVertex] = EMPTY;
-	}
-	
-	for (size_t currentVertex = 0; currentVertex < vertexCount; ++currentVertex) {
-		for (Edge edge : graph[currentVertex]) {
-			if (edge.to_ != 0)
-				inEdges[edge.to_].push_back(edge);
+			graph[firstVertex].emplace_back(Edge(secondVertex, edgeWeight));
 		}
-	}
 
-	std::set<size_t> emptyVertex;
-	for (size_t currentVertex = 1; currentVertex < vertexCount; ++currentVertex) {
-		emptyVertex.insert(currentVertex);
-	}
-
-	while (!emptyVertex.empty()) {
-		size_t currentVertex = *emptyVertex.begin();
-		emptyVertex.erase(emptyVertex.begin());
-		if (componentType[GetParent(currentVertex)] == LINKED) 
+		size_t accessVertex = FirstDfs(0);
+		if (accessVertex != vertexCount) {
+			std::cout << "NO\n";
 			continue;
+		}
+
+		vertexComponent[0] = 0;
+		componentType[0] = LINKED;
+		for (size_t currentVertex = 1; currentVertex < vertexCount; ++currentVertex) {
+			vertexComponent[currentVertex] = currentVertex;
+			componentType[currentVertex] = EMPTY;
+		}
 		
-		currentVertex = GetParent(currentVertex);
-		componentType[currentVertex] = PROCESS;
+		for (size_t currentVertex = 0; currentVertex < vertexCount; ++currentVertex) {
+			for (Edge edge : graph[currentVertex]) {
+				if (edge.to_ != 0)
+					inEdges[edge.to_].emplace_back(currentVertex, edge.weight_);
+			}
+		}
+
+		for (size_t currentVertex = 1; currentVertex < vertexCount; ++currentVertex) {
+			componentHeap[currentVertex] = BuildBinomHeap(inEdges[currentVertex].data(), inEdges[currentVertex].size());
+		}
+
+		for (size_t currentVertex = 1; currentVertex < vertexCount; ++currentVertex) {
+			if (componentType[GetParent(currentVertex)] == LINKED) 
+				continue;
+			
+			size_t currentComponent = GetParent(currentVertex);
+			while ((currentComponent = MakeCompession(currentComponent)) != MAX_VERTEX_COUNT) {}
+		}
+
+		std::cout << minOstovWeight << '\n';
 	}
-	
-	// need to build Heaps for every vertex
 }
 
 // Realization of Binomial Heap methods
@@ -307,9 +338,13 @@ BinomHeap* BuildBinomHeap(Edge* arr, int cnt) {
 }
 
 Node* ExtractMin(BinomHeap** Heap) {
+	if (!(*Heap) || !(*Heap)->head)
+		return nullptr;
+
     Node* curMin = NULL;
     Node* beforeMin = NULL;
     Node* cur = (*Heap)->head;
+	Push(cur);
     Node* before = NULL;
 	Edge  min = cur->value;
 
