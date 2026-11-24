@@ -27,7 +27,7 @@ struct Node* 		extract_min			(struct BinomHeap** Heap)							;
 int 				check_binom_heap	(struct BinomHeap* Heap, int cnt)					;
 
 using weight_t = long long;
-const int MAX_VERTEX_COUNT = 1000;
+const int MAX_VERTEX_COUNT = 100000;
 const weight_t WRONG_VALUE = 1e18;
 
 struct Edge {
@@ -40,9 +40,74 @@ struct Edge {
 		: to_(to), weight_(weight) {}
 };
 
+enum VERTEX_TYPE {
+	EMPTY = 0,
+	PROCESS = 1,
+	LINKED = 2,
+};
+
 std::vector<Edge> graph[MAX_VERTEX_COUNT];
+std::vector<Edge> inEdges[MAX_VERTEX_COUNT];
+VERTEX_TYPE componentType[MAX_VERTEX_COUNT];
+size_t vertexComponent[MAX_VERTEX_COUNT];
+struct BinomHeap* componentHeap[MAX_VERTEX_COUNT];
+
+size_t getParent(size_t currentComponent) {
+	if (currentComponent == vertexComponent[currentComponent]) {
+		return currentComponent;
+	}
+
+	return vertexComponent[currentComponent] = getParent(currentComponent);
+}
+
+size_t unite(size_t firstComponent, size_t secondComponent) {
+	firstComponent = getParent(firstComponent);
+	secondComponent = getParent(secondComponent);
+	if (firstComponent == secondComponent) {
+		return firstComponent;
+	}
+
+	if (rand() % 2) {
+		vertexComponent[firstComponent] = secondComponent;
+		return secondComponent
+	}
+
+	vertexComponent[secondComponent] = firstComponent;
+	return firstComponent
+}
 
 int main() {
+	srand(time(nullptr));
+
+	size_t vertexCount, edgeCount;
+	std::cin >> vertexCount >> edgeCount;
+
+	for (size_t i = 0; i < edgeCount; ++i) {
+		size_t firstVertex, secondVertex;
+		std::cin >> firstVertex >> secondVertex;
+		--firstVertex;
+		--secondVertex;
+
+		weight_t edgeWeight;
+		std::cin >> edgeWeight;
+
+		graph[firstVertex].emplace_back(Edge(secondVertex, edgeWeight));
+	}
+
+	vertexComponent[0] = 0;
+	componentType[0] = LINKED;
+	for (size_t currentVertex = 1; currentVertex < vertexCount; ++currentVertex) {
+		vertexComponent[currentVertex] = currentVertex;
+		componentType[currentVertex] = EMPTY;
+	}
+	
+	for (size_t currentVertex = 0; currentVertex < vertexCount; ++currentVertex) {
+		for (Edge edge : graph[currentVertex]) {
+			if (edge.to_ != 0)
+				inEdges[edge.to_].push_back(edge);
+		}
+	}
+
 
 }
 
