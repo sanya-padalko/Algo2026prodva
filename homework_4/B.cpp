@@ -1,34 +1,13 @@
 #include <iostream>
 #include <vector>
+#include <set>
 #include <assert.h>
 #include <limits.h>
 #include <stdlib.h>
 
-struct Node {
-    int value;
-    struct Node* parent;
-    struct Node* child;
-    struct Node* next;
-    uint32_t degree;
-};
-
-struct BinomHeap {
-    struct Node* head;
-};
-
-struct BinomHeap*	BinomHeap_ctr		()													;
-struct Node* 		Node_ctr			(int value)											;
-
-void 				link_binomial		(struct Node* node1, struct Node* node2)			;
-struct BinomHeap* 	merge				(struct BinomHeap* Heap1, struct BinomHeap* Heap2)	;
-struct BinomHeap* 	build_binom_heap	(int* arr, int cnt)									;
-
-struct Node* 		extract_min			(struct BinomHeap** Heap)							;
-int 				check_binom_heap	(struct BinomHeap* Heap, int cnt)					;
-
 using weight_t = long long;
 const int MAX_VERTEX_COUNT = 100000;
-const weight_t WRONG_VALUE = 1e18;
+const weight_t WRONG_VALUE = -1e18;
 
 struct Edge {
 	size_t to_ = MAX_VERTEX_COUNT;
@@ -40,6 +19,36 @@ struct Edge {
 		: to_(to), weight_(weight) {}
 };
 
+bool operator<(Edge firstEdge, Edge secondEdge) {
+	return firstEdge.weight_ < secondEdge.weight_;
+}
+bool operator==(Edge firstEdge, Edge secondEdge) {
+	return firstEdge.weight_ == secondEdge.weight_;
+}
+
+struct Node {
+	int add;
+    Edge value;
+    Node* parent;
+    Node* child;
+    Node* next;
+    uint32_t degree;
+};
+
+struct BinomHeap {
+    Node* head;
+};
+
+BinomHeap*	BinomHeapCtr		()											;
+Node* 		NodeCtr				(Edge value)								;
+
+void 		LinkBinomial		(Node* node1, Node* node2)					;
+BinomHeap* 	Merge				(BinomHeap* Heap1, BinomHeap* Heap2)		;
+BinomHeap* 	BuildBinomHeap		(Edge* arr, int cnt)						;
+
+Node* 		ExtractMin			(BinomHeap** Heap)							;
+int 		CheckBinomHeap		(BinomHeap* Heap, int cnt)					;
+
 enum VERTEX_TYPE {
 	EMPTY = 0,
 	PROCESS = 1,
@@ -50,30 +59,58 @@ std::vector<Edge> graph[MAX_VERTEX_COUNT];
 std::vector<Edge> inEdges[MAX_VERTEX_COUNT];
 VERTEX_TYPE componentType[MAX_VERTEX_COUNT];
 size_t vertexComponent[MAX_VERTEX_COUNT];
-struct BinomHeap* componentHeap[MAX_VERTEX_COUNT];
+BinomHeap* componentHeap[MAX_VERTEX_COUNT];
 
-size_t getParent(size_t currentComponent) {
+char firstDfsUsed[MAX_VERTEX_COUNT];
+size_t FirstDfs(size_t vertex) {
+	firstDfsUsed[vertex] = 1;
+	size_t subtreeSize = 0;
+
+	for (Edge edge : graph[vertex]) {
+		if (!firstDfsUsed[edge.to_]) {
+			subtreeSize += FirstDfs(edge.to_);
+		}
+	}
+
+	return subtreeSize + 1;
+}
+
+size_t GetParent(size_t currentComponent) {
 	if (currentComponent == vertexComponent[currentComponent]) {
 		return currentComponent;
 	}
 
-	return vertexComponent[currentComponent] = getParent(currentComponent);
+	return vertexComponent[currentComponent] = GetParent(vertexComponent[currentComponent]);
 }
 
-size_t unite(size_t firstComponent, size_t secondComponent) {
-	firstComponent = getParent(firstComponent);
-	secondComponent = getParent(secondComponent);
-	if (firstComponent == secondComponent) {
-		return firstComponent;
+size_t Dfs(size_t currentVertex) {
+	componentType[currentVertex] = PROCESS;
+
+	while (componentHeap[currentVertex] && componentHeap[currentVertex]->head) {
+		Node* minNode = ExtractMin(&componentHeap[currentVertex]);
+		if (!minNode)
+			break;
+		
+		size_t nextComponent = GetParent(minNode->value.to_);
+		if (nextComponent == currentVertex)
+			continue;
+		
+		if (componentType[nextComponent] == PROCESS) {
+			componentType[currentVertex] = LINKED;
+			return nextComponent;
+		}
+
+		if (componentType[nextComponent] == EMPTY) {
+			size_t cycleVertex = Dfs(nextComponent);
+			componentType[currentVertex] = LINKED;
+			return cycleVertex;
+		}
+
+		break;
 	}
 
-	if (rand() % 2) {
-		vertexComponent[firstComponent] = secondComponent;
-		return secondComponent
-	}
-
-	vertexComponent[secondComponent] = firstComponent;
-	return firstComponent
+	componentType[currentVertex] = LINKED;
+	return MAX_VERTEX_COUNT;
 }
 
 int main() {
@@ -94,6 +131,12 @@ int main() {
 		graph[firstVertex].emplace_back(Edge(secondVertex, edgeWeight));
 	}
 
+	size_t accessVertex = FirstDfs(0);
+	if (accessVertex != vertexCount) {
+		std::cout << "NO";
+		return 0;
+	}
+
 	vertexComponent[0] = 0;
 	componentType[0] = LINKED;
 	for (size_t currentVertex = 1; currentVertex < vertexCount; ++currentVertex) {
@@ -108,13 +151,43 @@ int main() {
 		}
 	}
 
+	std::set<size_t> emptyVertex;
+	for (size_t currentVertex = 1; currentVertex < vertexCount; ++currentVertex) {
+		emptyVertex.insert(currentVertex);
+	}
 
+	while (!emptyVertex.empty()) {
+		size_t currentVertex = *emptyVertex.begin();
+		emptyVertex.erase(emptyVertex.begin());
+		if (componentType[GetParent(currentVertex)] == LINKED) 
+			continue;
+		
+		currentVertex = GetParent(currentVertex);
+		componentType[currentVertex] = PROCESS;
+	}
+	
+	// need to build Heaps for every vertex
 }
 
 // Realization of Binomial Heap methods
 
-struct BinomHeap* BinomHeap_ctr() {
-    struct BinomHeap* Heap = (struct BinomHeap*)calloc(1, sizeof(struct BinomHeap));
+void Push(Node* node) {
+	if (node->add == 0)
+		return;
+	
+	node->value.weight_ += node->add;
+
+	Node* son = node->child;
+	while (son) {
+		son->add += node->add;
+		son = son->next;
+	}
+
+	node->add = 0;
+}
+
+BinomHeap* BinomHeapCtr() {
+    BinomHeap* Heap = (BinomHeap*)calloc(1, sizeof(BinomHeap));
     if (!Heap) return NULL;
 
     Heap->head = NULL;
@@ -122,10 +195,11 @@ struct BinomHeap* BinomHeap_ctr() {
     return Heap;
 }
 
-struct Node* Node_ctr(int value) {
-    struct Node* node = (struct Node*)calloc(1, sizeof(struct Node));
+Node* NodeCtr(Edge value) {
+    Node* node = (Node*)calloc(1, sizeof(Node));
     if (!node) return NULL;
 
+	node->add		= 0;
     node->value		= value;
     node->parent	= NULL;
     node->child		= NULL;
@@ -135,7 +209,10 @@ struct Node* Node_ctr(int value) {
     return node;
 }
 
-void link_binomial(struct Node* node1, struct Node* node2) {
+void LinkBinomial(Node* node1, Node* node2) {
+	Push(node1);
+	Push(node2);
+
     assert(node1->degree == node2->degree);
 
     node1->parent = node2;
@@ -144,9 +221,9 @@ void link_binomial(struct Node* node1, struct Node* node2) {
     ++node2->degree;
 } 
 
-static struct Node* merge_root_list(struct Node* head1, struct Node* head2) {
-	struct Node node;
-	struct Node* tail = &node;
+static Node* MergeRootList(Node* head1, Node* head2) {
+	Node node;
+	Node* tail = &node;
 
 	while (head1 && head2) {                    // сливаем корневые списки в один, по возрастанию степеней
         if (head1->degree < head2->degree) {
@@ -175,34 +252,39 @@ static struct Node* merge_root_list(struct Node* head1, struct Node* head2) {
 	return node.next;
 }
 
-struct BinomHeap* merge(struct BinomHeap* Heap1, struct BinomHeap* Heap2) {
+BinomHeap* Merge(BinomHeap* Heap1, BinomHeap* Heap2) {
     if (Heap1 == NULL)
         return Heap2;
     if (Heap2 == NULL)
         return Heap1;
     
-    struct BinomHeap* Heap = BinomHeap_ctr();
+    BinomHeap* Heap = BinomHeapCtr();
     
-    struct Node* curH = merge_root_list(Heap1->head, Heap2->head);
+    Node* curH = MergeRootList(Heap1->head, Heap2->head);
+	Node* curHcopy = curH;
+	while (curHcopy) {
+		Push(curHcopy);
+		curHcopy = curHcopy->next;
+	}
 
 	Heap->head = curH;
-    struct Node* prev = NULL;
+    Node* prev = NULL;
 
     while (curH && curH->next) {
-        struct Node* next = curH->next;
+        Node* next = curH->next;
         if (curH->degree != next->degree || (next->next && next->next->degree == curH->degree)) {
             prev = curH;
             curH = next;
         } else if (curH->value < next->value) {
             curH->next = next->next;
-            link_binomial(next, curH);
+            LinkBinomial(next, curH);
         } else {
             if (prev == NULL) {
                 Heap->head = next;
             } else {
                 prev->next = next;
             }
-            link_binomial(curH, next);
+            LinkBinomial(curH, next);
             curH = next;
         }
         next = curH->next;
@@ -211,28 +293,29 @@ struct BinomHeap* merge(struct BinomHeap* Heap1, struct BinomHeap* Heap2) {
     return Heap;
 }
 
-struct BinomHeap* build_binom_heap(int* arr, int cnt) {
-    struct BinomHeap* Heap = BinomHeap_ctr();
+BinomHeap* BuildBinomHeap(Edge* arr, int cnt) {
+    BinomHeap* Heap = BinomHeapCtr();
 
     for (int i = 0; i < cnt; ++i) {
-        struct BinomHeap* ElemHeap = BinomHeap_ctr();
-        ElemHeap->head = Node_ctr(arr[i]);
+        BinomHeap* ElemHeap = BinomHeapCtr();
+        ElemHeap->head = NodeCtr(arr[i]);
 
-        Heap = merge(Heap, ElemHeap);
+        Heap = Merge(Heap, ElemHeap);
     }
 
     return Heap;
 }
 
-struct Node* extract_min(struct BinomHeap** Heap) {
-    int min = INT_MAX;
-    struct Node* curMin = NULL;
-    struct Node* beforeMin = NULL;
-    struct Node* cur = (*Heap)->head;
-    struct Node* before = NULL;
+Node* ExtractMin(BinomHeap** Heap) {
+    Node* curMin = NULL;
+    Node* beforeMin = NULL;
+    Node* cur = (*Heap)->head;
+    Node* before = NULL;
+	Edge  min = cur->value;
 
     while (cur) {
-        if (cur->value <= min) {            // ищем минимального и предыдущего
+		Push(cur);
+        if (cur->value < min || cur->value == min) {    // ищем минимального и предыдущего
             min = cur->value;
             curMin = cur;
             beforeMin = before;
@@ -246,21 +329,23 @@ struct Node* extract_min(struct BinomHeap** Heap) {
     else
         beforeMin->next = curMin->next;
     
-    struct BinomHeap* ChildHeap = BinomHeap_ctr();
+    BinomHeap* ChildHeap = BinomHeapCtr();
     cur = curMin->child;
     ChildHeap->head = curMin->child;
     while (cur != NULL) {
         cur->parent = NULL;
+		cur->add += curMin->add;
         cur = cur->next;
     }
-    *Heap = merge(*Heap, ChildHeap);
+	curMin->add = 0;
+    *Heap = Merge(*Heap, ChildHeap);
     return curMin;
 }
 
-int check_binom_heap(struct BinomHeap* Heap, int cnt) {
-    int last = -1;
+int CheckBinomHeap(BinomHeap* Heap, int cnt) {
+    Edge last;
     for (int i = 0; i < cnt; ++i) {
-        struct Node* min_node = extract_min(&Heap);
+        Node* min_node = ExtractMin(&Heap);
         if (min_node->value < last)
             return 0;
 
