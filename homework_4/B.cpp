@@ -85,8 +85,10 @@ size_t GetParent(size_t currentComponent) {
 
 
 Edge vertexEdgeWeight[MAX_VERTEX_COUNT];
+std::vector<weight_t> pathWeights;
 
 size_t Dfs(size_t currentVertex) {
+	// std::cout << "dfs " << currentVertex << std::endl;
 	componentType[currentVertex] = PROCESS;
 
 	while (componentHeap[currentVertex] && componentHeap[currentVertex]->head) {
@@ -99,6 +101,7 @@ size_t Dfs(size_t currentVertex) {
 		if (nextComponent == currentVertex)
 			continue;
 		
+		pathWeights.push_back(minNode->value.weight_);
 		if (componentType[nextComponent] == PROCESS) {
 			componentType[currentVertex] = LINKED;
 			return nextComponent;
@@ -120,13 +123,16 @@ size_t Dfs(size_t currentVertex) {
 weight_t minOstovWeight = 0;
 
 size_t MakeCompession(size_t currentComponent) {
+	// std::cout << "make" << std::endl;
 	size_t cycleVertex = Dfs(currentComponent);
-	if (cycleVertex == MAX_VERTEX_COUNT)
+	if (cycleVertex == MAX_VERTEX_COUNT) {
 		return MAX_VERTEX_COUNT;
+	}
 
 	size_t savedCycleVertex = cycleVertex;
 	do {
-		minOstovWeight -= vertexEdgeWeight[cycleVertex].weight_;
+		pathWeights.pop_back();
+		minOstovWeight += vertexEdgeWeight[cycleVertex].weight_;
 		cycleVertex = GetParent(vertexEdgeWeight[cycleVertex].to_);
 	} while (savedCycleVertex != cycleVertex);
 
@@ -163,8 +169,16 @@ int main() {
 
 	srand(time(nullptr));
 
+	// std::cout << "start" << std::endl;
+
 	size_t vertexCount, edgeCount;
 	while (std::cin >> vertexCount >> edgeCount) {
+		// std::cout << "start" << std::endl;
+		for (size_t currentVertex = 0; currentVertex < vertexCount; ++currentVertex) {
+			graph[currentVertex].clear();
+			inEdges[currentVertex].clear();
+			firstDfsUsed[currentVertex] = 0;
+		}
 
 		for (size_t i = 0; i < edgeCount; ++i) {
 			size_t firstVertex, secondVertex;
@@ -184,6 +198,7 @@ int main() {
 			continue;
 		}
 
+		// std::cout << "YES" << std::endl;
 		vertexComponent[0] = 0;
 		componentType[0] = LINKED;
 		for (size_t currentVertex = 1; currentVertex < vertexCount; ++currentVertex) {
@@ -194,7 +209,7 @@ int main() {
 		for (size_t currentVertex = 0; currentVertex < vertexCount; ++currentVertex) {
 			for (Edge edge : graph[currentVertex]) {
 				if (edge.to_ != 0)
-					inEdges[edge.to_].emplace_back(currentVertex, -edge.weight_);
+					inEdges[edge.to_].emplace_back(currentVertex, edge.weight_);
 			}
 		}
 
@@ -208,9 +223,14 @@ int main() {
 			
 			size_t currentComponent = GetParent(currentVertex);
 			while ((currentComponent = MakeCompession(currentComponent)) != MAX_VERTEX_COUNT) {}
+
+			while (!pathWeights.empty()) {
+				minOstovWeight += pathWeights.back();
+				pathWeights.pop_back();
+			}
 		}
 
-		std::cout << minOstovWeight << '\n';
+		std::cout << minOstovWeight << std::endl;
 
 		minOstovWeight = 0;
 	}
@@ -219,6 +239,9 @@ int main() {
 // Realization of Binomial Heap methods
 
 void Push(Node* node) {
+	if (!node)
+		return;
+
 	if (node->add == 0)
 		return;
 	
@@ -269,7 +292,7 @@ void LinkBinomial(Node* node1, Node* node2) {
 } 
 
 static Node* MergeRootList(Node* head1, Node* head2) {
-	Node node;
+	Node node = {};
 	Node* tail = &node;
 
 	while (head1 && head2) {                    // сливаем корневые списки в один, по возрастанию степеней
