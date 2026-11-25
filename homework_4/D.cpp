@@ -124,10 +124,8 @@ void MakeCompession(size_t currentComponent) {
 
 					LeftHeap* heapHead = nullptr;
 					if (componentHeap[cycleVertex]) {
-						if (heapHead->left)
-							heapHead->left->add -= cycleEdgeWeight;
-						if (heapHead->right)
-							heapHead->right->add -= cycleEdgeWeight;
+						heapHead = componentHeap[cycleVertex];
+						heapHead->add -= cycleEdgeWeight;
 					}
 
 					resultHeap = Merge(resultHeap, componentHeap[cycleVertex]);
@@ -271,6 +269,9 @@ LeftHeap* Merge(LeftHeap* firstHeap, LeftHeap* secondHeap) {
         return secondHeap;
     if (!secondHeap)
         return firstHeap;
+
+	Push(firstHeap);
+	Push(secondHeap);
     
 	if (firstHeap->value.weight_ > secondHeap->value.weight_)
 		std::swap(firstHeap, secondHeap);
@@ -297,6 +298,7 @@ LeftHeap* BuildLeftHeap(Edge* edgeArray, int edgeCount) {
 }
 
 LeftHeap* ExtractMin(LeftHeap** heap) {
+	Push(*heap);
 	LeftHeap* minNode = *heap;
 	*heap = Merge(minNode->left, minNode->right);
 
