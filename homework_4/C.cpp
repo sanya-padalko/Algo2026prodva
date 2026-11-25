@@ -31,7 +31,6 @@ struct Node {
 	Edge value;
 	size_t degree;
 
-	Node* parent;
 	Node* child;
 	Node* left;
 	Node* right;
@@ -267,6 +266,8 @@ void Push(FibonacciHeap* heap) {
 	for (size_t i = 0; i != heap->degree; ++i) {
 		currentNode->add += heap->globalAdd;
 		Push(currentNode);
+
+		currentNode = currentNode->right;
 	}
 	
 	heap->globalAdd = 0;
@@ -279,7 +280,6 @@ FibonacciHeap* FibonacciHeapCtr(Edge edge) {
 	heap->degree = 1;
 	heap->head->degree = 0;
 
-	heap->head->parent = nullptr;
 	heap->head->child = nullptr;
 	heap->head->left = nullptr;
 	heap->head->right = nullptr;
@@ -310,6 +310,7 @@ FibonacciHeap* Merge(FibonacciHeap* firstHeap, FibonacciHeap* secondHeap) {
 	
 	currentNode->right = secondHeap->head;
 	secondHeap->head->left = currentNode;
+	firstHeap->degree += secondHeap->degree;
 
 	return firstHeap;
 }
@@ -329,8 +330,10 @@ FibonacciHeap* BuildFibonacciHeap(Edge* edgeArray, int edgeCount) {
 const size_t MAX_DEGREE = 50;
 
 Node* ExtractMin(FibonacciHeap** heapPtr) {
-	Push(*heapPtr);
+	if (!heapPtr || !(*heapPtr) || !(*heapPtr)->head)
+		return nullptr;
 
+	Push(*heapPtr);
 	Node* minNode = (*heapPtr)->minNode;
 	if (!(minNode->child)) {
 		Node* leftNode = minNode->left;
@@ -344,6 +347,16 @@ Node* ExtractMin(FibonacciHeap** heapPtr) {
 		if (rightNode)
 			rightNode->left = leftNode;
 
+		--(*heapPtr)->degree;
+		(*heapPtr)->minNode = (*heapPtr)->head;
+		Node* currentNode = (*heapPtr)->head;
+		for (size_t i = 0; i != (*heapPtr)->degree; ++i) {
+			if (GetWeight((*heapPtr)->minNode) > GetWeight(currentNode))
+				(*heapPtr)->minNode = currentNode;
+
+			currentNode = currentNode->right;
+		}
+
 		return minNode;
 	}
 	
@@ -351,14 +364,17 @@ Node* ExtractMin(FibonacciHeap** heapPtr) {
 		(*heapPtr)->head = minNode->child;
 	} else {
 		(minNode->left)->right = minNode->child;
+		(minNode->child)->left = minNode->left;
 	}
 
 	Node* rightChild = minNode->child;
 	for (size_t i = 0; i != minNode->degree - 1; ++i)
 		rightChild = rightChild->right;
 
-	if (minNode->right)
+	if (minNode->right) {
 		(minNode->right)->left = rightChild;
+		rightChild->right = minNode->right;
+	}
 
 	(*heapPtr)->degree = (*heapPtr)->degree - 1 + minNode->degree;
 	
@@ -373,7 +389,7 @@ Node* ExtractMin(FibonacciHeap** heapPtr) {
 	for (size_t i = 0; i != (*heapPtr)->degree; ++i) {
 		rootNodes.push_back(currentNode);
 
-		if (GetWeight(currentNode) > GetWeight((*heapPtr)->minNode))
+		if (GetWeight(currentNode) < GetWeight((*heapPtr)->minNode))
 			(*heapPtr)->minNode = currentNode;
 
 		currentNode = currentNode->right;
@@ -424,6 +440,17 @@ Node* ExtractMin(FibonacciHeap** heapPtr) {
 		++(*heapPtr)->degree;
 		prevNode = degreeArray[currentDegree];
 	}
+
+	if ((*heapPtr)->degree == 0) {
+		(*heapPtr)->head = nullptr;
+		(*heapPtr)->minNode = nullptr;
+	}
+	else {
+		(*heapPtr)->head->left = nullptr;
+	}
+
+	if (prevNode)
+		prevNode->right = nullptr;
 
 	minNode->left = minNode->right = nullptr;
 	return minNode;
