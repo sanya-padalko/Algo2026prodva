@@ -47,7 +47,6 @@ BinomHeap* 	Merge				(BinomHeap* Heap1, BinomHeap* Heap2)		;
 BinomHeap* 	BuildBinomHeap		(Edge* arr, int cnt)						;
 
 Node* 		ExtractMin			(BinomHeap** Heap)							;
-int 		CheckBinomHeap		(BinomHeap* Heap, int cnt)					;
 
 enum VERTEX_TYPE {
 	EMPTY = 0,
@@ -105,7 +104,7 @@ void MakeCompession(size_t currentComponent) {
 			pathWeights.push_back(minNode->value.weight_);
 			if (componentType[nextComponent] == PROCESS) {
 				size_t savedCycleVertex = nextComponent;
-				size_t cycleVertex = nextComponent;
+				size_t cycleVertex = currentVertex;
 
 				std::vector<Edge> cycleEdges;
 				do {
@@ -116,6 +115,12 @@ void MakeCompession(size_t currentComponent) {
 					pathVertexs.pop_back();
 					cycleVertex = pathVertexs.back();
 				} while (savedCycleVertex != cycleVertex);
+
+				cycleEdges.emplace_back(cycleVertex, pathWeights.back());
+				minOstovWeight += pathWeights.back();
+
+				pathWeights.pop_back();
+				pathVertexs.pop_back();
 
 				BinomHeap* resultHeap = nullptr;
 				for (Edge cycleEdge : cycleEdges) {
@@ -146,18 +151,17 @@ void MakeCompession(size_t currentComponent) {
 			}
 
 			if (componentType[nextComponent] == EMPTY) {
-				pathWeights.push_back(minNode->value.weight_);
 				pathVertexs.push_back(nextComponent);
 				continue;
 			}
 		}
-
-		componentType[currentComponent] = LINKED;
-		minOstovWeight += pathWeights.back();
-
-		pathVertexs.pop_back();
-		if (!pathVertexs.empty())
-			pathWeights.pop_back();
+		
+		for (size_t currentVertex : pathVertexs)
+			componentType[currentVertex] = LINKED;
+		for (weight_t edgeWeight : pathWeights) {
+			minOstovWeight += edgeWeight;
+		}
+		break;
 	}
 
 	// add _t to names of types
@@ -287,8 +291,8 @@ void LinkBinomial(Node* node1, Node* node2) {
 } 
 
 static Node* MergeRootList(Node* head1, Node* head2) {
-	Node node = {};
-	Node* tail = &node;
+	Node* tail = new Node();
+	Node* start = tail;
 
 	while (head1 && head2) {                    // сливаем корневые списки в один, по возрастанию степеней
         if (head1->degree < head2->degree) {
@@ -314,7 +318,7 @@ static Node* MergeRootList(Node* head1, Node* head2) {
         tail = tail->next;
     }
 
-	return node.next;
+	return start->next;
 }
 
 BinomHeap* Merge(BinomHeap* Heap1, BinomHeap* Heap2) {
@@ -352,7 +356,6 @@ BinomHeap* Merge(BinomHeap* Heap1, BinomHeap* Heap2) {
             LinkBinomial(curH, next);
             curH = next;
         }
-        next = curH->next;
     }
 
     return Heap;
@@ -398,27 +401,24 @@ Node* ExtractMin(BinomHeap** Heap) {
     else
         beforeMin->next = curMin->next;
     
-    BinomHeap* ChildHeap = BinomHeapCtr();
+	Node* prevChild = nullptr;
     cur = curMin->child;
-    ChildHeap->head = curMin->child;
-    while (cur != NULL) {
-        cur->parent = NULL;
+    while (cur) {
+		Node* nextChild = cur->next;
+        cur->parent = nullptr;
 		cur->add += curMin->add;
-        cur = cur->next;
+		cur->next = prevChild;
+		prevChild = cur;
+        cur = nextChild;
     }
+	curMin->child = nullptr;
+	curMin->next = nullptr;
 	curMin->add = 0;
-    *Heap = Merge(*Heap, ChildHeap);
+	
+	if (prevChild) {
+    	BinomHeap* childHeap = BinomHeapCtr();
+		childHeap->head = prevChild;
+    	*Heap = Merge(*Heap, childHeap);
+	}
     return curMin;
-}
-
-int CheckBinomHeap(BinomHeap* Heap, int cnt) {
-    Edge last;
-    for (int i = 0; i < cnt; ++i) {
-        Node* min_node = ExtractMin(&Heap);
-        if (min_node->value < last)
-            return 0;
-
-        last = min_node->value;
-    }
-    return 1;
 }
