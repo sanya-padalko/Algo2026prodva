@@ -84,83 +84,83 @@ size_t GetParent(size_t currentComponent) {
 }
 
 
-Edge vertexEdgeWeight[MAX_VERTEX_COUNT];
-std::vector<weight_t> pathWeights;
-
-size_t Dfs(size_t currentVertex) {
-	// std::cout << "dfs " << currentVertex << std::endl;
-	componentType[currentVertex] = PROCESS;
-
-	while (componentHeap[currentVertex] && componentHeap[currentVertex]->head) {
-		Node* minNode = ExtractMin(&componentHeap[currentVertex]);
-		if (!minNode)
-			break;
-		
-		vertexEdgeWeight[currentVertex] = minNode->value;
-		size_t nextComponent = GetParent(minNode->value.to_);
-		if (nextComponent == currentVertex)
-			continue;
-		
-		pathWeights.push_back(minNode->value.weight_);
-		if (componentType[nextComponent] == PROCESS) {
-			componentType[currentVertex] = LINKED;
-			return nextComponent;
-		}
-
-		if (componentType[nextComponent] == EMPTY) {
-			size_t cycleVertex = Dfs(nextComponent);
-			componentType[currentVertex] = LINKED;
-			return cycleVertex;
-		}
-
-		break;
-	}
-
-	componentType[currentVertex] = LINKED;
-	return MAX_VERTEX_COUNT;
-}
-
 weight_t minOstovWeight = 0;
 
-size_t MakeCompession(size_t currentComponent) {
-	// std::cout << "make" << std::endl;
-	size_t cycleVertex = Dfs(currentComponent);
-	if (cycleVertex == MAX_VERTEX_COUNT) {
-		return MAX_VERTEX_COUNT;
-	}
+void MakeCompession(size_t currentComponent) {
+	currentComponent = GetParent(currentComponent);
 
-	size_t savedCycleVertex = cycleVertex;
-	do {
-		pathWeights.pop_back();
-		minOstovWeight += vertexEdgeWeight[cycleVertex].weight_;
-		cycleVertex = GetParent(vertexEdgeWeight[cycleVertex].to_);
-	} while (savedCycleVertex != cycleVertex);
+	std::vector<size_t> pathVertexs;
+	std::vector<weight_t> pathWeights;
+	pathVertexs.push_back(currentComponent);
+	while (!pathVertexs.empty()) {
+		size_t currentVertex = pathVertexs.back();
+		componentType[currentVertex] = PROCESS;
 
-	BinomHeap* resultHeap = nullptr;
-	std::vector<size_t> cycleNodes;
-	do {
-		Node* heapHead = nullptr;
-		if (componentHeap[GetParent(cycleVertex)]) {
-			heapHead = componentHeap[GetParent(cycleVertex)]->head;
-			while (heapHead) {
-				heapHead->add -= vertexEdgeWeight[cycleVertex].weight_;
-				heapHead = heapHead->next;
+		if (componentHeap[currentVertex] && componentHeap[currentVertex]->head) {
+			Node* minNode = ExtractMin(&componentHeap[currentVertex]);
+			size_t nextComponent = GetParent(minNode->value.to_);
+			if (nextComponent == currentVertex)
+				continue;
+			
+			pathWeights.push_back(minNode->value.weight_);
+			if (componentType[nextComponent] == PROCESS) {
+				size_t savedCycleVertex = nextComponent;
+				size_t cycleVertex = nextComponent;
+
+				std::vector<Edge> cycleEdges;
+				do {
+					cycleEdges.emplace_back(cycleVertex, pathWeights.back());
+
+					minOstovWeight += pathWeights.back();
+					pathWeights.pop_back();
+					pathVertexs.pop_back();
+					cycleVertex = pathVertexs.back();
+				} while (savedCycleVertex != cycleVertex);
+
+				BinomHeap* resultHeap = nullptr;
+				for (Edge cycleEdge : cycleEdges) {
+					cycleVertex = cycleEdge.to_;
+					weight_t cycleEdgeWeight = cycleEdge.weight_;
+
+					Node* heapHead = nullptr;
+					if (componentHeap[cycleVertex]) {
+						heapHead = componentHeap[cycleVertex]->head;
+						while (heapHead) {
+							heapHead->add -= cycleEdgeWeight;
+							heapHead = heapHead->next;
+						}
+					}
+
+					resultHeap = Merge(resultHeap, componentHeap[cycleVertex]);
+				}
+				componentHeap[savedCycleVertex] = resultHeap;
+
+				for (Edge cycleEdge : cycleEdges) { // add nice size_t unite(size_t firstRoot, size_t SecondRoot) returning right root
+					cycleVertex = cycleEdge.to_;
+					vertexComponent[cycleVertex] = savedCycleVertex;
+					GetParent(cycleVertex);
+				}
+				
+				pathVertexs.push_back(savedCycleVertex);
+				continue;
+			}
+
+			if (componentType[nextComponent] == EMPTY) {
+				pathWeights.push_back(minNode->value.weight_);
+				pathVertexs.push_back(nextComponent);
+				continue;
 			}
 		}
-		resultHeap = Merge(resultHeap, componentHeap[GetParent(cycleVertex)]);
 
-		cycleNodes.push_back(cycleVertex);
-		cycleVertex = GetParent(vertexEdgeWeight[cycleVertex].to_);
-	} while (savedCycleVertex != cycleVertex);
+		componentType[currentComponent] = LINKED;
+		minOstovWeight += pathWeights.back();
 
-	componentHeap[GetParent(cycleVertex)] = resultHeap;
+		pathVertexs.pop_back();
+		if (!pathVertexs.empty())
+			pathWeights.pop_back();
+	}
 
-	size_t root = GetParent(savedCycleVertex);
-	for (size_t cycleVertex : cycleNodes)
-		vertexComponent[GetParent(cycleVertex)] = root;
-
-	componentType[GetParent(cycleVertex)] = EMPTY;
-	return GetParent(cycleVertex);
+	// add _t to names of types
 }
 
 int main() {
@@ -222,12 +222,7 @@ int main() {
 				continue;
 			
 			size_t currentComponent = GetParent(currentVertex);
-			while ((currentComponent = MakeCompession(currentComponent)) != MAX_VERTEX_COUNT) {}
-
-			while (!pathWeights.empty()) {
-				minOstovWeight += pathWeights.back();
-				pathWeights.pop_back();
-			}
+			MakeCompession(currentComponent);
 		}
 
 		std::cout << minOstovWeight << std::endl;
