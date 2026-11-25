@@ -5,7 +5,7 @@
 #include <limits.h>
 #include <stdlib.h>
 
-using weight_t = long long;
+using weight_t = long long; // must be signed
 const int MAX_VERTEX_COUNT = 100000;
 const weight_t WRONG_VALUE = -1e18;
 
@@ -27,7 +27,7 @@ bool operator==(Edge firstEdge, Edge secondEdge) {
 }
 
 struct Node {
-	int add;
+	weight_t add;
     Edge value;
     Node* parent;
     Node* child;
@@ -126,19 +126,33 @@ size_t MakeCompession(size_t currentComponent) {
 
 	size_t savedCycleVertex = cycleVertex;
 	do {
-		minOstovWeight += vertexEdgeWeight[cycleVertex].weight_;
+		minOstovWeight -= vertexEdgeWeight[cycleVertex].weight_;
 		cycleVertex = GetParent(vertexEdgeWeight[cycleVertex].to_);
 	} while (savedCycleVertex != cycleVertex);
 
 	BinomHeap* resultHeap = nullptr;
+	std::vector<size_t> cycleNodes;
 	do {
+		Node* heapHead = nullptr;
+		if (componentHeap[GetParent(cycleVertex)]) {
+			heapHead = componentHeap[GetParent(cycleVertex)]->head;
+			while (heapHead) {
+				heapHead->add -= vertexEdgeWeight[cycleVertex].weight_;
+				heapHead = heapHead->next;
+			}
+		}
 		resultHeap = Merge(resultHeap, componentHeap[GetParent(cycleVertex)]);
-		vertexComponent[GetParent(cycleVertex)] = GetParent(savedCycleVertex);
 
+		cycleNodes.push_back(cycleVertex);
 		cycleVertex = GetParent(vertexEdgeWeight[cycleVertex].to_);
 	} while (savedCycleVertex != cycleVertex);
 
 	componentHeap[GetParent(cycleVertex)] = resultHeap;
+
+	size_t root = GetParent(savedCycleVertex);
+	for (size_t cycleVertex : cycleNodes)
+		vertexComponent[GetParent(cycleVertex)] = root;
+
 	componentType[GetParent(cycleVertex)] = EMPTY;
 	return GetParent(cycleVertex);
 }
@@ -180,7 +194,7 @@ int main() {
 		for (size_t currentVertex = 0; currentVertex < vertexCount; ++currentVertex) {
 			for (Edge edge : graph[currentVertex]) {
 				if (edge.to_ != 0)
-					inEdges[edge.to_].emplace_back(currentVertex, edge.weight_);
+					inEdges[edge.to_].emplace_back(currentVertex, -edge.weight_);
 			}
 		}
 
@@ -197,6 +211,8 @@ int main() {
 		}
 
 		std::cout << minOstovWeight << '\n';
+
+		minOstovWeight = 0;
 	}
 }
 
