@@ -341,7 +341,7 @@ Node* ExtractMin(FibonacciHeap** heapPtr) {
 		else
 			leftNode->right = rightNode;
 
-		if (!rightNode)
+		if (rightNode)
 			rightNode->left = leftNode;
 
 		return minNode;
